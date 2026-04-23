@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Master Data Hub</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; min-height: 100vh; }
+.page { max-width: 900px; margin: 0 auto; background: #fff; min-height: 100vh; }
+.page.wide { max-width: 1200px; }
+
+.header { background: linear-gradient(135deg, #00a0d1 0%, #0082b3 40%, #006494 100%); padding: 2rem 2.5rem 2.5rem; position: relative; overflow: hidden; }
+.header::before { content:''; position:absolute; top:-60px; right:-60px; width:260px; height:260px; background:rgba(255,255,255,0.08); border-radius:50%; }
+.header::after  { content:''; position:absolute; bottom:-80px; right:100px; width:320px; height:320px; background:rgba(255,255,255,0.05); border-radius:50%; }
+#breadcrumb { font-size:12px; color:rgba(255,255,255,0.7); margin-bottom:0.5rem; position:relative; z-index:1; }
+#breadcrumb .bc-link { color:rgba(255,255,255,0.9); text-decoration:underline; cursor:pointer; }
+#page-title { font-size:28px; font-weight:300; color:#fff; margin-bottom:6px; position:relative; z-index:1; }
+#page-subtitle { font-size:14px; color:rgba(255,255,255,0.8); line-height:1.5; max-width:520px; position:relative; z-index:1; }
+
+.body { padding: 2rem 2.5rem; }
+
+.section-label { font-size:11px; font-weight:600; letter-spacing:0.07em; text-transform:uppercase; color:#888; margin-bottom:0.5rem; margin-top:1.75rem; }
+.section-label:first-child { margin-top:0; }
+
+.list-item { display:flex; align-items:center; gap:14px; padding:14px 12px; border-bottom:1px solid #f0f0f0; cursor:pointer; border-radius:6px; transition:background 0.12s; }
+.list-item:hover { background:#f5fbff; }
+.item-icon { width:38px; height:38px; border-radius:8px; background:#e8f4fb; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.item-content { flex:1; }
+.item-title { font-size:15px; font-weight:600; color:#0082b3; margin-bottom:2px; }
+.list-item:hover .item-title { color:#005f8a; }
+.item-desc { font-size:13px; color:#666; line-height:1.4; }
+.item-right { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+.badge { font-size:10px; font-weight:600; border-radius:4px; padding:2px 8px; white-space:nowrap; }
+.badge-smdg { background:#e8f4fb; color:#0082b3; border:1px solid #b3d9ee; }
+.count-badge { font-size:11px; font-weight:700; background:#0082b3; color:#fff; border-radius:10px; padding:2px 8px; }
+.chevron { color:#bbb; font-size:18px; line-height:1; }
+
+.screen { display:none; }
+.screen.active { display:block; }
+.back-link { font-size:13px; color:#0082b3; cursor:pointer; display:inline-block; padding:8px 0 16px; }
+.back-link:hover { text-decoration:underline; }
+
+/* Open Requests table */
+.stats-row { display:flex; gap:0; margin-bottom:1.5rem; border:1px solid #cce8f4; border-radius:8px; overflow:hidden; }
+.stat-cell { flex:1; padding:10px 0; text-align:center; border-right:1px solid #cce8f4; }
+.stat-cell:last-child { border-right:none; }
+.sc-num { font-size:20px; font-weight:700; color:#0082b3; line-height:1; }
+.sc-label { font-size:10px; color:#888; margin-top:2px; text-transform:uppercase; letter-spacing:0.04em; }
+.search-wrap { position:relative; margin-bottom:0; }
+.search-wrap svg { position:absolute; left:10px; top:50%; transform:translateY(-50%); pointer-events:none; }
+.search-input { width:100%; border:1px solid #ccdde8; border-radius:6px; padding:8px 12px 8px 32px; font-size:13px; font-family:'Segoe UI',sans-serif; color:#333; outline:none; }
+.search-input:focus { border-color:#0082b3; }
+.filter-bar { display:flex; gap:6px; flex-wrap:wrap; margin:10px 0 1rem; }
+.filter-btn { font-size:11px; font-weight:600; padding:3px 10px; border-radius:12px; border:1px solid #d0e8f4; background:#fff; cursor:pointer; color:#555; }
+.filter-btn.active, .filter-btn:hover { background:#0082b3; color:#fff; border-color:#0082b3; }
+.req-table { width:100%; border-collapse:collapse; font-size:13px; }
+.req-table thead tr { background:#f5fbff; }
+.req-table th { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:#888; padding:8px 12px; text-align:left; border-bottom:1px solid #e0edf5; white-space:nowrap; }
+.req-table td { padding:10px 12px; border-bottom:1px solid #f0f4f7; vertical-align:middle; color:#333; }
+.req-table tbody tr:hover { background:#f5fbff; }
+.req-table tbody tr:last-child td { border-bottom:none; }
+.req-badge { font-size:10px; font-weight:700; border-radius:3px; padding:2px 7px; white-space:nowrap; }
+.b-new{background:#dff0fb;color:#005f8a;} .b-change{background:#fff3e0;color:#8a5800;} .b-price{background:#e8f5e9;color:#2e6b35;} .b-vendor{background:#f3e8ff;color:#5c3d8a;} .b-pir{background:#fce8f0;color:#8a2050;}
+.status-pill { font-size:11px; font-weight:600; padding:2px 9px; border-radius:10px; white-space:nowrap; }
+.sp-pending{background:#fff3cd;color:#856404;} .sp-review{background:#cfe2ff;color:#0a3874;} .sp-rework{background:#ffe5e5;color:#8a1010;} .sp-enrichment{background:#e8f5e9;color:#2e6b35;}
+.age-cell { color:#aaa; font-size:11px; white-space:nowrap; }
+.comment-btn { font-size:11px; font-weight:600; color:#0082b3; background:#e8f4fb; border:1px solid #b3d9ee; border-radius:4px; padding:4px 10px; cursor:pointer; }
+.comment-btn:hover { background:#d0eaf7; }
+.no-results { font-size:13px; color:#aaa; padding:1.5rem 0; text-align:center; }
+
+/* My Requests */
+.mr-toolbar { display:flex; align-items:center; gap:10px; margin-bottom:1.25rem; flex-wrap:wrap; }
+.mr-search-wrap { position:relative; flex:1; min-width:200px; }
+.mr-search-wrap svg { position:absolute; left:10px; top:50%; transform:translateY(-50%); pointer-events:none; }
+.mr-search { width:100%; border:1px solid #ccdde8; border-radius:6px; padding:7px 12px 7px 32px; font-size:13px; font-family:'Segoe UI',sans-serif; color:#333; outline:none; }
+.mr-search:focus { border-color:#0082b3; }
+.mr-dropdown { border:1px solid #ccdde8; border-radius:6px; padding:7px 28px 7px 10px; font-size:13px; font-family:'Segoe UI',sans-serif; color:#333; outline:none; background:#fff url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23999' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 10px center; -webkit-appearance:none; appearance:none; cursor:pointer; }
+.mr-dropdown:focus { border-color:#0082b3; }
+.mr-table { width:100%; border-collapse:collapse; font-size:13px; table-layout:fixed; }
+.mr-table thead tr { background:#f5fbff; }
+.mr-table th { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:#888; padding:9px 12px; text-align:left; border-bottom:1px solid #e0edf5; white-space:nowrap; overflow:hidden; }
+.mr-table td { padding:10px 12px; border-bottom:1px solid #f0f4f7; vertical-align:middle; overflow:hidden; text-overflow:ellipsis; }
+.mr-table tbody tr:hover { background:#f5fbff; }
+.mr-table tbody tr:last-child td { border-bottom:none; }
+.col-type{width:36px;} .col-ref{width:90px;} .col-sku{width:80px;} .col-desc{} .col-smdg{width:130px;} .col-status{width:130px;} .col-project{width:110px;} .col-date{width:90px;}
+.mr-type-icon { width:26px; height:26px; border-radius:5px; display:flex; align-items:center; justify-content:center; }
+.mr-ref { font-size:12px; font-weight:600; color:#0082b3; white-space:nowrap; cursor:pointer; }
+.mr-ref:hover { text-decoration:underline; }
+.mr-project { font-size:12px; color:#666; }
+.smdg-link { font-size:12px; font-weight:600; color:#0082b3; text-decoration:none; white-space:nowrap; }
+.smdg-link:hover { text-decoration:underline; }
+.mr-status { font-size:11px; font-weight:600; padding:2px 9px; border-radius:10px; white-space:nowrap; }
+.mst-open{background:#dff0fb;color:#005f8a;} .mst-progress{background:#cfe2ff;color:#0a3874;} .mst-fasttrack{background:#d4edda;color:#155724;border:1px solid #a8d5b0;} .mst-waiting{background:#fff3cd;color:#856404;} .mst-resolved{background:#f0f0f0;color:#666;}
+.mr-empty { font-size:13px; color:#aaa; padding:2rem 0; text-align:center; }
+
+/* JSM forms */
+.jsm-form { max-width:560px; }
+.field-group { margin-bottom:1.25rem; }
+.field-label { display:block; font-size:13px; font-weight:600; color:#333; margin-bottom:6px; }
+.field-hint { font-size:12px; font-weight:400; color:#aaa; }
+.req-star { color:#0082b3; }
+.field-input { width:100%; border:1px solid #ccdde8; border-radius:6px; padding:9px 12px; font-size:13px; font-family:'Segoe UI',sans-serif; color:#333; outline:none; }
+.field-input:focus { border-color:#0082b3; }
+.field-textarea { width:100%; border:1px solid #ccdde8; border-radius:6px; padding:9px 12px; font-size:13px; font-family:'Segoe UI',sans-serif; color:#333; outline:none; resize:vertical; min-height:100px; }
+.field-textarea:focus { border-color:#0082b3; }
+.radio-group { display:flex; flex-wrap:wrap; gap:8px; }
+.radio-opt { display:flex; align-items:center; gap:7px; cursor:pointer; font-size:13px; color:#444; padding:6px 14px; border:1px solid #ccdde8; border-radius:20px; background:#fff; transition:all 0.1s; }
+.radio-opt:hover { border-color:#0082b3; background:#f0f8fd; }
+.radio-opt input { accent-color:#0082b3; cursor:pointer; }
+.form-footer { display:flex; align-items:center; justify-content:space-between; padding-top:1rem; border-top:1px solid #f0f0f0; flex-wrap:wrap; gap:12px; }
+.rbs-note { background:#fff8e8; border:1px solid #f0d080; border-radius:6px; padding:10px 14px; font-size:12px; color:#7a5800; margin-bottom:1.5rem; display:flex; align-items:flex-start; gap:8px; }
+.btn-submit { font-size:13px; font-weight:700; padding:9px 24px; border-radius:6px; border:none; background:#0082b3; color:#fff; cursor:pointer; }
+.btn-submit:hover { background:#006494; }
+
+/* Modal */
+.modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,40,70,0.4); z-index:200; justify-content:center; align-items:center; }
+.modal-overlay.open { display:flex; }
+.modal { background:#fff; border-radius:12px; width:460px; max-width:92vw; padding:1.5rem; box-shadow:0 12px 40px rgba(0,60,100,0.2); }
+.modal-hdr { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+.modal-title { font-size:16px; font-weight:700; color:#222; }
+.modal-x { background:none; border:none; font-size:22px; color:#aaa; cursor:pointer; line-height:1; padding:0; }
+.modal-x:hover { color:#555; }
+.modal-sku-line { font-size:13px; font-weight:600; color:#0082b3; margin-bottom:3px; }
+.modal-id-line { font-size:12px; color:#888; margin-bottom:14px; }
+.modal textarea { width:100%; border:1px solid #c8dfe8; border-radius:6px; padding:10px 12px; font-size:13px; font-family:'Segoe UI',sans-serif; resize:vertical; min-height:90px; color:#333; outline:none; }
+.modal textarea:focus { border-color:#0082b3; }
+.modal-ftr { display:flex; justify-content:flex-end; gap:8px; margin-top:12px; }
+.btn-cancel { font-size:13px; padding:7px 16px; border-radius:6px; border:1px solid #ccc; background:#fff; cursor:pointer; color:#555; }
+.btn-post { font-size:13px; padding:7px 16px; border-radius:6px; border:none; background:#0082b3; color:#fff; cursor:pointer; font-weight:600; }
+</style>
+</head>
+<body>
+<div class="page" id="main-page">
+  <div class="header">
+    <div id="breadcrumb">Operational Intake Portal / <strong style="color:#fff;">Master Data Hub</strong></div>
+    <h1 id="page-title">Master Data Hub</h1>
+    <p id="page-subtitle">Submit product, pricing, and vendor master data requests. All changes are routed through the appropriate workflow.</p>
+  </div>
+  <div class="body" id="main-body">
+
+    <!-- ═══════════════ HOME ═══════════════ -->
+    <div class="screen active" id="screen-home">
+      <div class="section-label">Products</div>
+      <div class="list-item" data-goto="screen-new-product" data-label="New Product" data-sub="Select the type of product to create.">
+        <div class="item-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="2" width="7" height="7" rx="1.5" fill="#0082b3"/><rect x="11" y="2" width="7" height="7" rx="1.5" fill="#0082b3" opacity=".35"/><rect x="2" y="11" width="7" height="7" rx="1.5" fill="#0082b3" opacity=".35"/><rect x="11" y="11" width="7" height="7" rx="1.5" fill="#0082b3" opacity=".18"/></svg></div>
+        <div class="item-content"><div class="item-title">New Product</div><div class="item-desc">Create a new material master record in S/4</div></div>
+        <div class="item-right"><span class="chevron">&#8250;</span></div>
+      </div>
+      <div class="list-item" data-goto="screen-change-product" data-label="Change Product" data-sub="Select the type of change to make.">
+        <div class="item-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M3 10a7 7 0 0 1 12-4.9M17 10a7 7 0 0 1-12 4.9" stroke="#0082b3" stroke-width="1.8" stroke-linecap="round"/><path d="M15 5.1V2.5H17.5M5 14.9V17.5H2.5" stroke="#0082b3" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="item-content"><div class="item-title">Change Product</div><div class="item-desc">Modify an existing material master record</div></div>
+        <div class="item-right"><span class="chevron">&#8250;</span></div>
+      </div>
+
+      <div class="section-label">Pricing &amp; Sourcing</div>
+      <div class="list-item" data-smdg="New PIR / Source List">
+        <div class="item-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M3 16V8l7-5 7 5v8" stroke="#0082b3" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><rect x="7" y="11" width="6" height="5" rx="1" fill="#0082b3" opacity=".4"/></svg></div>
+        <div class="item-content"><div class="item-title">New PIR / Source List</div><div class="item-desc">Create a purchasing info record or source list entry</div></div>
+        <div class="item-right"><span class="badge badge-smdg">SimpleMDG</span><span class="chevron">&#8250;</span></div>
+      </div>
+      <div class="list-item" data-smdg="Change Price">
+        <div class="item-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7.5" stroke="#0082b3" stroke-width="1.8"/><path d="M10 5.5v9M8 8h3a2 2 0 0 1 0 4H8" stroke="#0082b3" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+        <div class="item-content"><div class="item-title">Change Price</div><div class="item-desc">Update pricing conditions in S/4</div></div>
+        <div class="item-right"><span class="badge badge-smdg">SimpleMDG</span><span class="chevron">&#8250;</span></div>
+      </div>
+
+      <div class="section-label">Vendor</div>
+      <div class="list-item" data-goto="screen-new-vendor-mapping" data-label="New Vendor Mapping" data-sub="Submit a request to map a new vendor to a material or plant.">
+        <div class="item-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="7" cy="7" r="3.5" stroke="#0082b3" stroke-width="1.8"/><circle cx="15" cy="15" r="2.5" stroke="#0082b3" stroke-width="1.8" opacity=".5"/><path d="M10 10l3.5 3.5" stroke="#0082b3" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+        <div class="item-content"><div class="item-title">New Vendor Mapping</div><div class="item-desc">Map a vendor to a material or plant — routed to RBS team</div></div>
+        <div class="item-right"><span class="chevron">&#8250;</span></div>
+      </div>
+      <div class="list-item" data-smdg="Change Default Vendor">
+        <div class="item-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="3.5" stroke="#0082b3" stroke-width="1.8"/><path d="M3.5 18c0-3.5 3-6 6.5-6s6.5 2.5 6.5 6" stroke="#0082b3" stroke-width="1.8" stroke-linecap="round"/><path d="M14 4l2 2 2-2" stroke="#0082b3" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="item-content"><div class="item-title">Change Default Vendor</div><div class="item-desc">Update the primary vendor assignment for a material</div></div>
+        <div class="item-right"><span class="badge badge-smdg">SimpleMDG</span><span class="chevron">&#8250;</span></div>
+      </div>
+
+      <div class="section-label">Status</div>
+      <div class="list-item" data-goto="screen-my-requests" data-label="My Requests" data-sub="View all requests you have submitted across all service types.">
+        <div class="item-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="3.5" stroke="#0082b3" stroke-width="1.8"/><path d="M3.5 17c0-3.5 3-5.5 6.5-5.5s6.5 2 6.5 5.5" stroke="#0082b3" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+        <div class="item-content"><div class="item-title">My Requests</div><div class="item-desc">View all tickets you have submitted — defects, ideas, master data, support</div></div>
+        <div class="item-right"><span class="chevron">&#8250;</span></div>
+      </div>
+      <div class="list-item" data-goto="screen-open-requests" data-label="Open Requests" data-sub="All open master data requests, sorted oldest to newest.">
+        <div class="item-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="3" y="3" width="14" height="14" rx="2" stroke="#0082b3" stroke-width="1.8"/><path d="M7 7h6M7 10.5h6M7 14h4" stroke="#0082b3" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+        <div class="item-content"><div class="item-title">View Open Requests</div><div class="item-desc">Track status of all in-flight master data requests</div></div>
+        <div class="item-right"><span class="count-badge">12</span><span class="chevron">&#8250;</span></div>
+      </div>
+
+      <div class="section-label">Support</div>
+      <div class="list-item" data-goto="screen-support" data-label="General Support" data-sub="Submit a question or issue to the master data team.">
+        <div class="item-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7.5" stroke="#0082b3" stroke-width="1.8"/><path d="M7.5 7.5a2.5 2.5 0 0 1 5 0c0 1.5-1.5 2-2.5 2.5V12" stroke="#0082b3" stroke-width="1.8" stroke-linecap="round"/><circle cx="10" cy="14.5" r="0.75" fill="#0082b3"/></svg></div>
+        <div class="item-content"><div class="item-title">General Master Data Support</div><div class="item-desc">Ask a question or report an issue to the master data team</div></div>
+        <div class="item-right"><span class="chevron">&#8250;</span></div>
+      </div>
+    </div>
+
+    <!-- ═══════════════ NEW PRODUCT ═══════════════ -->
+    <div class="screen" id="screen-new-product">
+      <span class="back-link" data-home="1">&#8592; Back to Master Data Hub</span>
+      <div class="section-label">Panasonic products</div>
+      <div class="list-item" data-smdg="New Product – Main Model"><div class="item-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="5" width="16" height="11" rx="2" stroke="#0082b3" stroke-width="1.8"/><path d="M7 5V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1" stroke="#0082b3" stroke-width="1.8"/></svg></div><div class="item-content"><div class="item-title">Main Model</div><div class="item-desc">Primary sellable product SKU</div></div><div class="item-right"><span class="badge badge-smdg">SimpleMDG</span><span class="chevron">&#8250;</span></div></div>
+      <div class="list-item" data-smdg="New Product – Bundled Model"><div class="item-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="1.5" y="5" width="10" height="10" rx="2" stroke="#0082b3" stroke-width="1.8"/><rect x="8.5" y="5" width="10" height="10" rx="2" stroke="#0082b3" stroke-width="1.8" opacity=".4"/></svg></div><div class="item-content"><div class="item-title">Bundled Model</div><div class="item-desc">Multi-component bundle (Sales BOM)</div></div><div class="item-right"><span class="badge badge-smdg">SimpleMDG</span><span class="chevron">&#8250;</span></div></div>
+      <div class="list-item" data-smdg="New Product – Accessory"><div class="item-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M5 10h10M10 5v10" stroke="#0082b3" stroke-width="1.8" stroke-linecap="round"/><circle cx="10" cy="10" r="7.5" stroke="#0082b3" stroke-width="1.8" opacity=".4"/></svg></div><div class="item-content"><div class="item-title">Accessory</div><div class="item-desc">Standalone accessory item</div></div><div class="item-right"><span class="badge badge-smdg">SimpleMDG</span><span class="chevron">&#8250;</span></div></div>
+      <div class="list-item" data-smdg="New Product – Service"><div class="item-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 2A8 8 0 1 1 2 10" stroke="#0082b3" stroke-width="1.8" stroke-linecap="round"/><path d="M10 5.5V10l2.5 2" stroke="#0082b3" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="item-content"><div class="item-title">Service</div><div class="item-desc">Panasonic service offering</div></div><div class="item-right"><span class="badge badge-smdg">SimpleMDG</span><span class="chevron">&#8250;</span></div></div>
+      <div class="list-item" data-smdg="New Product – Spare Parts"><div class="item-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M16.5 7.5a5 5 0 0 0-7-7L12 3l-2.5 2.5L7 3l3-2.5A5 5 0 0 0 3 7.5c0 1 .3 2 .8 2.8L2.5 12a3.5 3.5 0 0 0 5 5l1.7-1.7A5 5 0 0 0 16.5 7.5z" stroke="#0082b3" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="item-content"><div class="item-title">Spare Parts</div><div class="item-desc">Replacement or repair parts</div></div><div class="item-right"><span class="badge badge-smdg">SimpleMDG</span><span class="chevron">&#8250;</span></div></div>
+      <div class="section-label">Third-party products</div>
+      <div class="list-item" data-smdg="New Product – 3rd Party Hardware"><div class="item-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="4" width="16" height="11" rx="2" stroke="#0082b3" stroke-width="1.8"/><path d="M7 15v2M13 15v2M5 17h10" stroke="#0082b3" stroke-width="1.8" stroke-linecap="round"/></svg></div><div class="item-content"><div class="item-title">3rd Party Hardware</div><div class="item-desc">Non-Panasonic hardware for resale</div></div><div class="item-right"><span class="badge badge-smdg">SimpleMDG</span><span class="chevron">&#8250;</span></div></div>
+      <div class="list-item" data-smdg="New Product – 3rd Party Service"><div class="item-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="3.5" stroke="#0082b3" stroke-width="1.8"/><path d="M3 18c0-3.5 3-5.5 7-5.5s7 2 7 5.5" stroke="#0082b3" stroke-width="1.8" stroke-linecap="round"/></svg></div><div class="item-content"><div class="item-title">3rd Party Service</div><div class="item-desc">Non-Panasonic service for resale</div></div><div class="item-right"><span class="badge badge-smdg">SimpleMDG</span><span class="chevron">&#8250;</span></div></div>
+    </div>
+
+    <!-- ═══════════════ CHANGE PRODUCT ═══════════════ -->
+    <div class="screen" id="screen-change-product">
+      <span class="back-link" data-home="1">&#8592; Back to Master Data Hub</span>
+      <div class="section-label">Select change type</div>
+      <div class="list-item" data-smdg="Change Product Details"><div class="item-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="5" width="16" height="11" rx="2" stroke="#0082b3" stroke-width="1.8"/><path d="M6 10h8M6 13.5h5" stroke="#0082b3" stroke-width="1.8" stroke-linecap="round"/></svg></div><div class="item-content"><div class="item-title">Change Product Details</div><div class="item-desc">General field changes — description, UOM, plant data, classification, and more</div></div><div class="item-right"><span class="badge badge-smdg">SimpleMDG</span><span class="chevron">&#8250;</span></div></div>
+      <div class="list-item" data-goto="screen-change-biz-head" data-label="Change Product Business Head" data-sub="Submit a request to reassign the business head for this material."><div class="item-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="8" cy="7" r="3.5" stroke="#0082b3" stroke-width="1.8"/><path d="M2 18c0-3.5 2.7-5.5 6-5.5s6 2 6 5.5" stroke="#0082b3" stroke-width="1.8" stroke-linecap="round"/><path d="M14 3l2 2 2-2" stroke="#0082b3" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="item-content"><div class="item-title">Change Product Business Head</div><div class="item-desc">Reassign the business head responsible for this material</div></div><div class="item-right"><span class="chevron">&#8250;</span></div></div>
+      <div class="list-item" data-goto="screen-change-profit-center" data-label="Change Profit Center" data-sub="Submit a request to update the profit center. Routed to RBS team."><div class="item-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7.5" stroke="#0082b3" stroke-width="1.8"/><path d="M10 5.5v9M8 8h3a2 2 0 0 1 0 4H8" stroke="#0082b3" stroke-width="1.8" stroke-linecap="round"/></svg></div><div class="item-content"><div class="item-title">Change Profit Center</div><div class="item-desc">Update profit center assignment — routed to RBS team</div></div><div class="item-right"><span class="chevron">&#8250;</span></div></div>
+      <div class="list-item" data-smdg="Change Bundled Components / Sales BOM"><div class="item-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="1.5" y="5" width="10" height="10" rx="2" stroke="#0082b3" stroke-width="1.8"/><rect x="8.5" y="5" width="10" height="10" rx="2" stroke="#0082b3" stroke-width="1.8" opacity=".4"/><path d="M11 10h3" stroke="#0082b3" stroke-width="1.8" stroke-linecap="round"/></svg></div><div class="item-content"><div class="item-title">Change Bundled Components / Sales BOM</div><div class="item-desc">Add, remove, or update components within a sales bundle</div></div><div class="item-right"><span class="badge badge-smdg">SimpleMDG</span><span class="chevron">&#8250;</span></div></div>
+      <div class="list-item" data-smdg="Change Production BOM"><div class="item-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="5" width="16" height="11" rx="2" stroke="#0082b3" stroke-width="1.8"/><path d="M7 10.5h6M10 8v5" stroke="#0082b3" stroke-width="1.8" stroke-linecap="round"/></svg></div><div class="item-content"><div class="item-title">Change Production BOM</div><div class="item-desc">Add, remove, or update components within a production BOM</div></div><div class="item-right"><span class="badge badge-smdg">SimpleMDG</span><span class="chevron">&#8250;</span></div></div>
+    </div>
+
+    <!-- ═══════════════ CHANGE BIZ HEAD FORM ═══════════════ -->
+    <div class="screen" id="screen-change-biz-head">
+      <span class="back-link" data-back="screen-change-product" data-back-label="Change Product" data-back-sub="Select the type of change to make.">&#8592; Back to Change Product</span>
+      <p style="font-size:13px;color:#666;margin-bottom:1.5rem;line-height:1.6;">Use this form to reassign the business head responsible for a material. A JSM ticket will be created and routed for approval.</p>
+      <div class="jsm-form">
+        <div class="field-group"><label class="field-label">Material number <span class="req-star">*</span></label><input type="text" class="field-input" placeholder="e.g. 1000427"></div>
+        <div class="field-group"><label class="field-label">Material description</label><input type="text" class="field-input" placeholder="Auto-populated from S/4 in production"></div>
+        <div class="field-group"><label class="field-label">Current Business Head <span class="req-star">*</span></label><input type="text" class="field-input" placeholder="Name of current business head"></div>
+        <div class="field-group"><label class="field-label">New Business Head <span class="req-star">*</span></label><input type="text" class="field-input" placeholder="Name of new business head"></div>
+        <div class="field-group"><label class="field-label">Reason for change <span class="req-star">*</span></label><textarea class="field-textarea" placeholder="Explain why the business head needs to be changed"></textarea></div>
+        <div class="field-group"><label class="field-label">Requested by <span class="req-star">*</span></label><input type="text" class="field-input" placeholder="Your name"></div>
+        <div class="field-group"><label class="field-label">Email <span class="req-star">*</span></label><input type="email" class="field-input" placeholder="you@panasonic.com"></div>
+        <div class="form-footer"><span style="font-size:12px;color:#aaa;">Fields marked <span class="req-star">*</span> are required</span><button class="btn-submit" data-form-submit="Change Product Business Head">Submit Ticket</button></div>
+      </div>
+    </div>
+
+    <!-- ═══════════════ CHANGE PROFIT CENTER FORM ═══════════════ -->
+    <div class="screen" id="screen-change-profit-center">
+      <span class="back-link" data-back="screen-change-product" data-back-label="Change Product" data-back-sub="Select the type of change to make.">&#8592; Back to Change Product</span>
+      <div class="rbs-note"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="flex-shrink:0;margin-top:1px;"><circle cx="8" cy="8" r="7" stroke="#c89000" stroke-width="1.5"/><path d="M8 5v4M8 11v.5" stroke="#c89000" stroke-width="1.5" stroke-linecap="round"/></svg>This request is routed to the RBS team for support. Please allow additional processing time.</div>
+      <div class="jsm-form">
+        <div class="field-group"><label class="field-label">Material number <span class="req-star">*</span></label><input type="text" class="field-input" placeholder="e.g. 1000427"></div>
+        <div class="field-group"><label class="field-label">Material description</label><input type="text" class="field-input" placeholder="Auto-populated from S/4 in production"></div>
+        <div class="field-group"><label class="field-label">Current Profit Center <span class="req-star">*</span></label><input type="text" class="field-input" placeholder="e.g. PC-1234"></div>
+        <div class="field-group"><label class="field-label">New Profit Center <span class="req-star">*</span></label><input type="text" class="field-input" placeholder="e.g. PC-5678"></div>
+        <div class="field-group"><label class="field-label">Effective date <span class="req-star">*</span></label><input type="date" class="field-input"></div>
+        <div class="field-group"><label class="field-label">Business justification <span class="req-star">*</span></label><textarea class="field-textarea" placeholder="Explain the business reason for this change"></textarea></div>
+        <div class="field-group"><label class="field-label">Requested by <span class="req-star">*</span></label><input type="text" class="field-input" placeholder="Your name"></div>
+        <div class="field-group"><label class="field-label">Email <span class="req-star">*</span></label><input type="email" class="field-input" placeholder="you@panasonic.com"></div>
+        <div class="form-footer"><span style="font-size:12px;color:#aaa;">Fields marked <span class="req-star">*</span> are required</span><button class="btn-submit" data-form-submit="Change Profit Center">Submit Ticket</button></div>
+      </div>
+    </div>
+
+    <!-- ═══════════════ NEW VENDOR MAPPING FORM ═══════════════ -->
+    <div class="screen" id="screen-new-vendor-mapping">
+      <span class="back-link" data-home="1">&#8592; Back to Master Data Hub</span>
+      <div class="rbs-note"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="flex-shrink:0;margin-top:1px;"><circle cx="8" cy="8" r="7" stroke="#c89000" stroke-width="1.5"/><path d="M8 5v4M8 11v.5" stroke="#c89000" stroke-width="1.5" stroke-linecap="round"/></svg>This request is routed to the RBS team for support. Please allow additional processing time.</div>
+      <div class="jsm-form">
+        <div class="field-group"><label class="field-label">Vendor number <span class="req-star">*</span></label><input type="text" class="field-input" placeholder="e.g. V-00452"></div>
+        <div class="field-group"><label class="field-label">Vendor name <span class="req-star">*</span></label><input type="text" class="field-input" placeholder="Vendor company name"></div>
+        <div class="field-group"><label class="field-label">Material number <span class="req-star">*</span></label><input type="text" class="field-input" placeholder="e.g. 1000427"></div>
+        <div class="field-group"><label class="field-label">Plant <span class="req-star">*</span></label><input type="text" class="field-input" placeholder="e.g. US01"></div>
+        <div class="field-group"><label class="field-label">Purchasing organization <span class="req-star">*</span></label><input type="text" class="field-input" placeholder="e.g. USPO"></div>
+        <div class="field-group"><label class="field-label">Notes <span class="field-hint">(optional)</span></label><textarea class="field-textarea" placeholder="Any additional context for the RBS team"></textarea></div>
+        <div class="field-group"><label class="field-label">Requested by <span class="req-star">*</span></label><input type="text" class="field-input" placeholder="Your name"></div>
+        <div class="field-group"><label class="field-label">Email <span class="req-star">*</span></label><input type="email" class="field-input" placeholder="you@panasonic.com"></div>
+        <div class="form-footer"><span style="font-size:12px;color:#aaa;">Fields marked <span class="req-star">*</span> are required</span><button class="btn-submit" data-form-submit="New Vendor Mapping">Submit Ticket</button></div>
+      </div>
+    </div>
+
+    <!-- ═══════════════ MY REQUESTS ═══════════════ -->
+    <div class="screen" id="screen-my-requests">
+      <span class="back-link" data-home="1">&#8592; Back to Master Data Hub</span>
+      <div class="mr-toolbar">
+        <div class="mr-search-wrap">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="6" cy="6" r="4.5" stroke="#aaa" stroke-width="1.5"/><path d="M9.5 9.5l2.5 2.5" stroke="#aaa" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <input class="mr-search" id="mr-search" type="text" placeholder="Request contains...">
+        </div>
+        <select class="mr-dropdown" id="mr-status-filter">
+          <option value="all">Status: All requests</option>
+          <option value="open" selected>Status: Open requests</option>
+          <option value="resolved">Status: Resolved / Done</option>
+        </select>
+        <select class="mr-dropdown" id="mr-type-filter">
+          <option value="all">Request type: All</option>
+          <option value="Master Data">Master Data</option>
+          <option value="Defect">Defect</option>
+          <option value="Idea/Enhancement">Idea/Enhancement</option>
+          <option value="Support">Support</option>
+          <option value="Access">Access</option>
+        </select>
+      </div>
+      <div id="mr-list"></div>
+    </div>
+
+    <!-- ═══════════════ OPEN REQUESTS ═══════════════ -->
+    <div class="screen" id="screen-open-requests">
+      <span class="back-link" data-home="1">&#8592; Back to Master Data Hub</span>
+      <div class="stats-row">
+        <div class="stat-cell"><div class="sc-num">12</div><div class="sc-label">Total Open</div></div>
+        <div class="stat-cell"><div class="sc-num">5</div><div class="sc-label">Pending</div></div>
+        <div class="stat-cell"><div class="sc-num">3</div><div class="sc-label">In Review</div></div>
+        <div class="stat-cell"><div class="sc-num">2</div><div class="sc-label">Rework</div></div>
+        <div class="stat-cell"><div class="sc-num">2</div><div class="sc-label">Enrichment</div></div>
+      </div>
+      <div class="search-wrap">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="6" cy="6" r="4.5" stroke="#aaa" stroke-width="1.5"/><path d="M9.5 9.5l2.5 2.5" stroke="#aaa" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <input class="search-input" id="req-search" type="text" placeholder="Search by SKU, description, requestor, or ticket ID...">
+      </div>
+      <div class="filter-bar">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="New Product">New Product</button>
+        <button class="filter-btn" data-filter="Change Product">Change Product</button>
+        <button class="filter-btn" data-filter="Change Price">Change Price</button>
+        <button class="filter-btn" data-filter="Vendor">Vendor</button>
+        <button class="filter-btn" data-filter="PIR">PIR / Source List</button>
+      </div>
+      <div id="req-list"></div>
+    </div>
+
+    <!-- ═══════════════ GENERAL SUPPORT ═══════════════ -->
+    <div class="screen" id="screen-support">
+      <span class="back-link" data-home="1">&#8592; Back to Master Data Hub</span>
+      <p style="font-size:13px;color:#666;margin-bottom:1.5rem;line-height:1.6;">Use this form to contact the master data team with questions, data discrepancies, or anything that doesn't fit a standard request type.</p>
+      <div class="jsm-form">
+        <div class="field-group"><label class="field-label">Issue type <span class="req-star">*</span></label><div class="radio-group"><label class="radio-opt"><input type="radio" name="issue-type" value="Question"> <span>Question</span></label><label class="radio-opt"><input type="radio" name="issue-type" value="Data discrepancy"> <span>Data discrepancy</span></label><label class="radio-opt"><input type="radio" name="issue-type" value="Process clarification"> <span>Process clarification</span></label><label class="radio-opt"><input type="radio" name="issue-type" value="Other"> <span>Other</span></label></div></div>
+        <div class="field-group"><label class="field-label">Related SKU <span class="field-hint">(optional)</span></label><input type="text" class="field-input" id="support-sku" placeholder="e.g. 1000427"></div>
+        <div class="field-group"><label class="field-label">Subject <span class="req-star">*</span></label><input type="text" class="field-input" id="support-subject" placeholder="Brief summary of your question or issue"></div>
+        <div class="field-group"><label class="field-label">Description <span class="req-star">*</span></label><textarea class="field-textarea" id="support-desc" placeholder="Provide as much detail as possible"></textarea></div>
+        <div class="field-group"><label class="field-label">Priority</label><div class="radio-group"><label class="radio-opt"><input type="radio" name="priority" value="Low" checked> <span>Low</span></label><label class="radio-opt"><input type="radio" name="priority" value="Medium"> <span>Medium</span></label><label class="radio-opt"><input type="radio" name="priority" value="High"> <span>High</span></label></div></div>
+        <div class="field-group"><label class="field-label">Your name <span class="req-star">*</span></label><input type="text" class="field-input" id="support-name" placeholder="First and last name"></div>
+        <div class="field-group"><label class="field-label">Your email <span class="req-star">*</span></label><input type="email" class="field-input" id="support-email" placeholder="you@panasonic.com"></div>
+        <div class="form-footer"><span style="font-size:12px;color:#aaa;">Fields marked <span class="req-star">*</span> are required</span><button class="btn-submit" data-form-submit="General Support">Submit Ticket</button></div>
+      </div>
+    </div>
+
+  </div><!-- /body -->
+</div><!-- /page -->
+
+<!-- COMMENT MODAL -->
+<div class="modal-overlay" id="comment-modal">
+  <div class="modal">
+    <div class="modal-hdr"><span class="modal-title">Post a Comment</span><button class="modal-x" id="modal-close-btn">&#215;</button></div>
+    <div class="modal-sku-line" id="modal-sku"></div>
+    <div class="modal-id-line" id="modal-id"></div>
+    <textarea id="comment-text" placeholder="Type your comment..."></textarea>
+    <div class="modal-ftr"><button class="btn-cancel" id="modal-cancel-btn">Cancel</button><button class="btn-post" id="modal-post-btn">Post Comment</button></div>
+  </div>
+</div>
+
+<script>
+var REQS = [
+  {id:'MDG-0088',type:'New Product',    bc:'b-new',    sku:'1000388',desc:'LUMIX S5 IIX Body Only',        who:'Sarah Kim',  dept:'Product Mgmt',age:'18 days',status:'Rework',          sc:'sp-rework'},
+  {id:'MDG-0091',type:'New Product',    bc:'b-new',    sku:'1000391',desc:'LUMIX G9 II Lens Kit Bundle',   who:'Tom Nguyen', dept:'Product Mgmt',age:'15 days',status:'Pending Approval', sc:'sp-pending'},
+  {id:'MDG-0094',type:'PIR',            bc:'b-pir',    sku:'1000394',desc:'Toughbook FZ-40 MK1',          who:'Dana Reyes', dept:'Procurement', age:'14 days',status:'In Review',        sc:'sp-review'},
+  {id:'MDG-0097',type:'Change Product', bc:'b-change', sku:'1000222',desc:'LUMIX S 20-60mm Lens',         who:'Mike Torres',dept:'Supply Chain',age:'12 days',status:'Pending Approval', sc:'sp-pending'},
+  {id:'MDG-0099',type:'Change Price',   bc:'b-price',  sku:'1000105',desc:'Toughpad FZ-M1 Config B',      who:'Lisa Park',  dept:'Finance',     age:'11 days',status:'In Review',        sc:'sp-review'},
+  {id:'MDG-0102',type:'New Product',    bc:'b-new',    sku:'1000402',desc:'Toughbook 40 Accessory Kit',   who:'James Wu',   dept:'Product Mgmt',age:'10 days',status:'Sales Enrichment', sc:'sp-enrichment'},
+  {id:'MDG-0104',type:'Vendor',         bc:'b-vendor', sku:'1000088',desc:'Panasonic HDMI Cable 2M',      who:'Amy Chen',   dept:'Procurement', age:'9 days', status:'Pending Approval', sc:'sp-pending'},
+  {id:'MDG-0107',type:'Change Product', bc:'b-change', sku:'1000310',desc:'LUMIX BGH1 Body',              who:'Ryan Patel', dept:'Operations',  age:'8 days', status:'Rework',           sc:'sp-rework'},
+  {id:'MDG-0109',type:'Vendor',         bc:'b-vendor', sku:'1000210',desc:'Toughbook 55 Docking Station',who:'Karen Moss', dept:'Procurement', age:'7 days', status:'Pending Approval', sc:'sp-pending'},
+  {id:'MDG-0111',type:'Change Price',   bc:'b-price',  sku:'1000177',desc:'LUMIX S1R Body',               who:'David Lin',  dept:'Finance',     age:'5 days', status:'In Review',        sc:'sp-review'},
+  {id:'MDG-0114',type:'New Product',    bc:'b-new',    sku:'1000414',desc:'Panasonic ET-LAD320 Lamp',     who:'Nina Ford',  dept:'Product Mgmt',age:'3 days', status:'SCM Enrichment',   sc:'sp-enrichment'},
+  {id:'MDG-0116',type:'PIR',            bc:'b-pir',    sku:'1000199',desc:'Toughbook FZ-55 MK2 Config A',who:'Chris Bell', dept:'Procurement', age:'1 day',  status:'Pending Approval', sc:'sp-pending'}
+];
+
+var MY_REQUESTS = [
+  {ref:'MDG-1042',type:'Master Data',      icon:'md',   sku:'1000427',skuDesc:'LUMIX S5 IIX Body Only',          smdgRef:'CR-2026-00441',status:'Pending Approval',statusClass:'mst-open',      project:'Master Data',      date:'Apr 22, 2026'},
+  {ref:'MDG-1043',type:'Master Data',      icon:'md',   sku:'1000428',skuDesc:'LUMIX S5 IIX Lens Kit',           smdgRef:'CR-2026-00441',status:'Pending Approval',statusClass:'mst-open',      project:'Master Data',      date:'Apr 22, 2026'},
+  {ref:'MDG-1044',type:'Master Data',      icon:'md',   sku:'1000429',skuDesc:'LUMIX S5 IIX Body + Lens Bundle', smdgRef:'CR-2026-00441',status:'Rejected',         statusClass:'mst-waiting',   project:'Master Data',      date:'Apr 22, 2026'},
+  {ref:'MDG-1038',type:'Master Data',      icon:'md',   sku:'1000310',skuDesc:'LUMIX BGH1 Body',                 smdgRef:'CR-2026-00438',status:'Rework',           statusClass:'mst-waiting',   project:'Master Data',      date:'Apr 15, 2026'},
+  {ref:'MDG-1039',type:'Master Data',      icon:'md',   sku:'1000311',skuDesc:'LUMIX BGH1 Body + Handle Kit',    smdgRef:'CR-2026-00438',status:'Pending Approval', statusClass:'mst-open',      project:'Master Data',      date:'Apr 15, 2026'},
+  {ref:'IDEA-211', type:'Idea/Enhancement',icon:'idea', sku:null,     skuDesc:'Financial Actual vs Planned Spend',smdgRef:null,           status:'Fast Track',       statusClass:'mst-fasttrack', project:'Idea/Enhancement', date:'Apr 10, 2026'},
+  {ref:'DEF-408',  type:'Defect',          icon:'bug',  sku:null,     skuDesc:'SF order sync failing on partials',smdgRef:null,           status:'In Progress',      statusClass:'mst-progress',  project:'Salesforce',       date:'Apr 8, 2026'},
+  {ref:'MDG-1031', type:'Master Data',     icon:'md',   sku:'1000199',skuDesc:'Toughbook FZ-55 MK2 Config A',    smdgRef:'CR-2026-00431',status:'S4 Activated',     statusClass:'mst-fasttrack', project:'Master Data',      date:'Apr 5, 2026'},
+  {ref:'SUP-093',  type:'Support',         icon:'sup',  sku:null,     skuDesc:'Profit center assignment question',smdgRef:null,           status:'Waiting',          statusClass:'mst-waiting',   project:'Master Data',      date:'Apr 4, 2026'},
+  {ref:'MDG-1028', type:'Master Data',     icon:'md',   sku:'1000388',skuDesc:'LUMIX S5 IIX Body Only',           smdgRef:'CR-2026-00428',status:'Done',             statusClass:'mst-resolved',  project:'Master Data',      date:'Mar 28, 2026'},
+  {ref:'MDG-1029', type:'Master Data',     icon:'md',   sku:'1000389',skuDesc:'LUMIX S5 IIX Grip Accessory',     smdgRef:'CR-2026-00428',status:'Done',             statusClass:'mst-resolved',  project:'Master Data',      date:'Mar 28, 2026'},
+  {ref:'ACC-047',  type:'Access',          icon:'acc',  sku:null,     skuDesc:'Anaplan read access for FY26',     smdgRef:null,           status:'Resolved',         statusClass:'mst-resolved',  project:'IT Access',        date:'Mar 22, 2026'},
+  {ref:'DEF-391',  type:'Defect',          icon:'bug',  sku:null,     skuDesc:'BOM explosion wrong on TB40 bundles',smdgRef:null,         status:'Resolved',         statusClass:'mst-resolved',  project:'SAP S/4',          date:'Mar 20, 2026'},
+  {ref:'MDG-1020', type:'Master Data',     icon:'md',   sku:'1000177',skuDesc:'LUMIX S1R Body',                   smdgRef:'CR-2026-00420',status:'Done',             statusClass:'mst-resolved',  project:'Master Data',      date:'Mar 15, 2026'},
+  {ref:'SUP-081',  type:'Support',         icon:'sup',  sku:null,     skuDesc:'Change default vendor workflow q', smdgRef:null,           status:'Resolved',         statusClass:'mst-resolved',  project:'Master Data',      date:'Mar 10, 2026'},
+  {ref:'IDEA-198', type:'Idea/Enhancement',icon:'idea', sku:null,     skuDesc:'Auto-populate mat desc from S/4',  smdgRef:null,           status:'Open',             statusClass:'mst-open',      project:'Idea/Enhancement', date:'Mar 5, 2026'}
+];
+
+var ICON_SVG = {
+  md:   '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="4" height="4" rx=".8" fill="#0082b3"/><rect x="7" y="1" width="4" height="4" rx=".8" fill="#0082b3" opacity=".4"/><rect x="1" y="7" width="4" height="4" rx=".8" fill="#0082b3" opacity=".4"/><rect x="7" y="7" width="4" height="4" rx=".8" fill="#0082b3" opacity=".2"/></svg>',
+  bug:  '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><ellipse cx="7" cy="8" rx="3" ry="4" stroke="#c0392b" stroke-width="1.3"/><path d="M5 3.5a2 2 0 0 1 4 0" stroke="#c0392b" stroke-width="1.3" stroke-linecap="round"/><path d="M3.5 6H2M11.5 6H13M3.5 9H2M11.5 9H13" stroke="#c0392b" stroke-width="1.3" stroke-linecap="round"/></svg>',
+  idea: '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1.5a3.5 3.5 0 0 1 1.75 6.53V9.5H5.25V8.03A3.5 3.5 0 0 1 7 1.5z" stroke="#d4900a" stroke-width="1.3"/><path d="M5.25 10.5h3.5M6 12h2" stroke="#d4900a" stroke-width="1.3" stroke-linecap="round"/></svg>',
+  sup:  '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="#0082b3" stroke-width="1.3"/><path d="M5.5 5.5a1.5 1.5 0 0 1 3 0c0 1-1 1.3-1.5 1.8V9" stroke="#0082b3" stroke-width="1.3" stroke-linecap="round"/><circle cx="7" cy="10.5" r=".5" fill="#0082b3"/></svg>',
+  acc:  '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="5" cy="6" r="2.5" stroke="#7b5ea7" stroke-width="1.3"/><path d="M8.5 8.5l3 3" stroke="#7b5ea7" stroke-width="1.3" stroke-linecap="round"/><path d="M1.5 12.5c0-2 1.5-3.5 3.5-3.5" stroke="#7b5ea7" stroke-width="1.3" stroke-linecap="round"/></svg>'
+};
+var ICON_BG = {md:'#e8f4fb',bug:'#fdecea',idea:'#fffbea',sup:'#e8f4fb',acc:'#f3e8ff'};
+
+var activeFilter = 'all';
+
+function renderRequests() {
+  var el = document.getElementById('req-list');
+  var q = (document.getElementById('req-search') ? document.getElementById('req-search').value.trim().toLowerCase() : '');
+  var data = REQS.filter(function(r) {
+    var tm = (activeFilter==='all' || r.type===activeFilter);
+    var sm = (!q || r.sku.toLowerCase().indexOf(q)>-1 || r.desc.toLowerCase().indexOf(q)>-1 || r.who.toLowerCase().indexOf(q)>-1 || r.id.toLowerCase().indexOf(q)>-1 || r.status.toLowerCase().indexOf(q)>-1);
+    return tm && sm;
+  });
+  if (!data.length) { el.innerHTML='<div class="no-results">No requests match your search.</div>'; return; }
+  var h='<table class="req-table"><thead><tr><th>Ticket</th><th>Type</th><th>SKU</th><th>Description</th><th>Requested by</th><th>Age</th><th>Status</th><th></th></tr></thead><tbody>';
+  for (var i=0;i<data.length;i++) {
+    var r=data[i];
+    h+='<tr><td style="font-size:11px;color:#888;white-space:nowrap;">'+r.id+'</td>';
+    h+='<td><span class="req-badge '+r.bc+'">'+r.type+'</span></td>';
+    h+='<td style="font-weight:600;font-size:12px;">'+r.sku+'</td>';
+    h+='<td style="color:#444;">'+r.desc+'</td>';
+    h+='<td style="font-size:12px;white-space:nowrap;">'+r.who+'<br><span style="color:#aaa;font-size:11px;">'+r.dept+'</span></td>';
+    h+='<td class="age-cell">'+r.age+'</td>';
+    h+='<td><span class="status-pill '+r.sc+'">'+r.status+'</span></td>';
+    h+='<td><button class="comment-btn" data-req-id="'+r.id+'" data-req-sku="'+r.sku+'" data-req-desc="'+r.desc.replace(/"/g,'&quot;')+'">Comment</button></td></tr>';
+  }
+  h+='</tbody></table>';
+  el.innerHTML=h;
+}
+
+function renderMyRequests() {
+  var el  = document.getElementById('mr-list');
+  var q   = document.getElementById('mr-search').value.trim().toLowerCase();
+  var sf  = document.getElementById('mr-status-filter').value;
+  var tf  = document.getElementById('mr-type-filter').value;
+  var DONE = ['Resolved','Done','S4 Activated'];
+  var data = MY_REQUESTS.filter(function(r) {
+    var s = (r.ref+' '+(r.sku||'')+' '+(r.skuDesc||'')+' '+(r.smdgRef||'')+' '+r.project).toLowerCase();
+    var sm  = (!q || s.indexOf(q)>-1);
+    var stm = (sf==='all' || (sf==='open' && DONE.indexOf(r.status)===-1) || (sf==='resolved' && DONE.indexOf(r.status)>-1));
+    var tm  = (tf==='all' || r.type===tf);
+    return sm && stm && tm;
+  });
+  if (!data.length) { el.innerHTML='<div class="mr-empty">No requests match your search or filters.</div>'; return; }
+  var h='<table class="mr-table"><thead><tr>';
+  h+='<th class="col-type">Type</th><th class="col-ref">Reference</th><th class="col-sku">SKU</th><th class="col-desc">Description</th><th class="col-smdg">SimpleMDG Req</th><th class="col-status">Status</th><th class="col-project">Project</th><th class="col-date">Submitted</th>';
+  h+='</tr></thead><tbody>';
+  for (var i=0;i<data.length;i++) {
+    var r=data[i];
+    var bg  = ICON_BG[r.icon]||'#e8f4fb';
+    var svg = ICON_SVG[r.icon]||ICON_SVG.sup;
+    var smdgCell = r.smdgRef ? '<a href="#" class="smdg-link">'+r.smdgRef+'</a>' : '<span style="color:#ccc;">&#8212;</span>';
+    var skuCell  = r.sku     ? '<span style="font-weight:600;font-size:12px;">'+r.sku+'</span>' : '<span style="color:#ccc;">&#8212;</span>';
+    var descCell = r.skuDesc ? r.skuDesc : '<span style="color:#ccc;">&#8212;</span>';
+    h+='<tr>';
+    h+='<td class="col-type"><div class="mr-type-icon" style="background:'+bg+'">'+svg+'</div></td>';
+    h+='<td class="col-ref"><span class="mr-ref">'+r.ref+'</span></td>';
+    h+='<td class="col-sku">'+skuCell+'</td>';
+    h+='<td class="col-desc" style="font-size:13px;color:#444;">'+descCell+'</td>';
+    h+='<td class="col-smdg">'+smdgCell+'</td>';
+    h+='<td class="col-status"><span class="mr-status '+r.statusClass+'">'+r.status+'</span></td>';
+    h+='<td class="col-project mr-project">'+r.project+'</td>';
+    h+='<td class="col-date" style="font-size:11px;color:#aaa;white-space:nowrap;">'+r.date+'</td>';
+    h+='</tr>';
+  }
+  h+='</tbody></table>';
+  el.innerHTML=h;
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+  document.getElementById(id).classList.add('active');
+  var pg=document.getElementById('main-page');
+  pg.classList.toggle('wide', id==='screen-my-requests');
+  if (id==='screen-open-requests') renderRequests();
+  if (id==='screen-my-requests') renderMyRequests();
+  window.scrollTo(0,0);
+}
+
+function goHome() {
+  showScreen('screen-home');
+  document.getElementById('page-title').textContent='Master Data Hub';
+  document.getElementById('page-subtitle').textContent='Submit product, pricing, and vendor master data requests. All changes are routed through the appropriate workflow.';
+  document.getElementById('breadcrumb').innerHTML='Operational Intake Portal / <strong style="color:#fff;">Master Data Hub</strong>';
+}
+
+function goTo(screenId,label,subtitle) {
+  showScreen(screenId);
+  document.getElementById('page-title').textContent=label;
+  document.getElementById('page-subtitle').textContent=subtitle;
+  document.getElementById('breadcrumb').innerHTML='Operational Intake Portal / <span class="bc-link" data-home="1">Master Data Hub</span> / <strong style="color:#fff;">'+label+'</strong>';
+}
+
+function goBack(screenId,label,subtitle) {
+  showScreen(screenId);
+  document.getElementById('page-title').textContent=label;
+  document.getElementById('page-subtitle').textContent=subtitle;
+  document.getElementById('breadcrumb').innerHTML='Operational Intake Portal / <span class="bc-link" data-home="1">Master Data Hub</span> / <strong style="color:#fff;">'+label+'</strong>';
+}
+
+function closeModal() { document.getElementById('comment-modal').classList.remove('open'); }
+
+document.addEventListener('click', function(e) {
+  var el=e.target;
+  while (el && el!==document.body) {
+    if (el.classList&&el.classList.contains('bc-link')) { goHome(); return; }
+    if (el.classList&&el.classList.contains('list-item')) {
+      if (el.dataset.goto)  { goTo(el.dataset.goto, el.dataset.label, el.dataset.sub); return; }
+      if (el.dataset.smdg)  { alert('Opening SimpleMDG:\n'+el.dataset.smdg+'\n\n(Replace with actual SimpleMDG URL)'); return; }
+    }
+    if (el.classList&&el.classList.contains('back-link')) {
+      if (el.dataset.home) { goHome(); return; }
+      if (el.dataset.back) { goBack(el.dataset.back, el.dataset.backLabel, el.dataset.backSub); return; }
+    }
+    if (el.classList&&el.classList.contains('filter-btn')&&el.dataset.filter) {
+      activeFilter=el.dataset.filter;
+      document.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active');});
+      el.classList.add('active');
+      renderRequests();
+      return;
+    }
+    if (el.classList&&el.classList.contains('comment-btn')&&el.dataset.reqId) {
+      document.getElementById('modal-sku').textContent=el.dataset.reqSku+' \u2014 '+el.dataset.reqDesc;
+      document.getElementById('modal-id').textContent='Ticket '+el.dataset.reqId;
+      document.getElementById('comment-text').value='';
+      document.getElementById('comment-modal').classList.add('open');
+      return;
+    }
+    if (el.id==='modal-close-btn'||el.id==='modal-cancel-btn') { closeModal(); return; }
+    if (el.id==='comment-modal') { closeModal(); return; }
+    if (el.id==='modal-post-btn') {
+      var t=document.getElementById('comment-text').value.trim();
+      if (!t) { alert('Please enter a comment.'); return; }
+      closeModal();
+      alert('Comment posted.\n\n(In production this posts to the JSM ticket via REST API.)');
+      return;
+    }
+    if (el.classList&&el.classList.contains('btn-submit')&&el.dataset.formSubmit) {
+      alert('Ticket submitted: '+el.dataset.formSubmit+'\n\n(In production this creates a JSM ticket via REST API.)');
+      return;
+    }
+    if (el.classList&&el.classList.contains('smdg-link')) {
+      e.preventDefault();
+      alert('Opening SimpleMDG request: '+el.textContent+'\n\n(Replace with actual SimpleMDG URL)');
+      return;
+    }
+    el=el.parentElement;
+  }
+});
+
+document.addEventListener('input', function(e) {
+  if (e.target&&e.target.id==='req-search') renderRequests();
+  if (e.target&&e.target.id==='mr-search') renderMyRequests();
+});
+document.addEventListener('change', function(e) {
+  if (e.target&&(e.target.id==='mr-status-filter'||e.target.id==='mr-type-filter')) renderMyRequests();
+});
+</script>
+</body>
+</html>
